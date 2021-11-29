@@ -16,7 +16,6 @@
 using usize = std::size_t;
 using String = std::string;
 
-
 template <typename Type, usize size>
 using Array = std::array<Type, size>;
 
@@ -174,6 +173,7 @@ class Matrix
 
     template <typename NewType>
     using SameShape = Matrix<nRows, nCols, NewType>;
+    using This = SameShape<Type>;
 
     using RowVector = Matrix<nRows, 1, Type>;
     using ColVector = Matrix<nCols, 1, Type>;
@@ -219,8 +219,8 @@ class Matrix
     Type max(Comparator comparator = std::max) const
     {
         Type result = self(1, 1);
-        for (int i = 1; i <= rows; i++) {
-            for (int j = 1; j <= cols; j++) {
+        for (usize i = 1; i <= rows; i++) {
+            for (usize j = 1; j <= cols; j++) {
                 result = comparator(result, self(i, j));
             }
         }
@@ -272,9 +272,10 @@ class Matrix
             throw MatrixIndexException::rowIndexOutOfBound(rows, cols, index);
         }
         RowVector vector;
-        for (int i = 0; i < cols; i++) {
+        for (usize i = 0; i < cols; i++) {
             vector(i) = self(index, i);
         }
+        return vector;
     }
 
     ColVector col(usize index) const
@@ -283,9 +284,10 @@ class Matrix
             throw MatrixIndexException::colIndexOutOfBound(rows, cols, index);
         }
         ColVector vector;
-        for (int i = 0; i < rows; i++) {
+        for (usize i = 0; i < rows; i++) {
             vector(i) = self(i, index);
         }
+        return vector;
     }
 
     inline RowVector operator [] (usize index) const
@@ -296,8 +298,8 @@ class Matrix
     Matrix<nRows - 1, nCols, Type> dropRow(usize index)
     {
         Matrix<nRows - 1, nCols, Type> result;
-        for (int i = 1; i <= result.rows; i++) {
-            for (int j = 1; j <= result.cols; j++) {
+        for (usize i = 1; i <= result.rows; i++) {
+            for (usize j = 1; j <= result.cols; j++) {
                 result(i, j) = self(i < index ? i : i + 1, j);
             }
         }
@@ -307,8 +309,8 @@ class Matrix
     Matrix<nRows, nCols - 1, Type> dropCol(usize index)
     {
         Matrix<nRows, nCols - 1, Type> result;
-        for (int i = 1; i <= result.rows; i++) {
-            for (int j = 1; j <= result.cols; j++) {
+        for (usize i = 1; i <= result.rows; i++) {
+            for (usize j = 1; j <= result.cols; j++) {
                 result(i, j) = self(i, j < index ? j : j + 1);
             }
         }
@@ -364,6 +366,20 @@ class Matrix
         return transpose();
     }
 
+    bool isInvertible() const
+    {
+        // TODO
+    }
+
+    This inverse() const
+    {
+        if (nCols != nRows) {
+            throw Exception("Only square matrices have inverse");
+        }
+        // TODO
+        return This();
+    }
+
     /**
      * (N-1)x(M-1) submatrix that removed n-th column and m-th row
      * @param row n
@@ -392,6 +408,11 @@ class Matrix
     }
 
     Type determinant() const
+    {
+        // TODO
+    }
+
+    usize rank() const
     {
         // TODO
     }
