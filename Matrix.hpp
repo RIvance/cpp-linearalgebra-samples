@@ -10,7 +10,9 @@
 
 #include <array>
 #include <string>
+#include <complex>
 #include <utility>
+#include <algorithm>
 #include <functional>
 
 using usize = std::size_t;
@@ -128,7 +130,7 @@ class MatrixData
         return data[index];
     }
 
-    Type & operator () (usize row, usize col)
+    Type & operator () (usize row, usize col = 1)
     {
         usize index = (row - 1) * nCols + (col - 1);
         if (col > nCols || row > nRows || col <= 0 || row <= 0) {
@@ -137,7 +139,7 @@ class MatrixData
         return data[index];
     }
 
-    Type operator () (usize row, usize col) const
+    Type operator () (usize row, usize col = 1) const
     {
         usize index = (row - 1) * nCols + (col - 1);
         if (col > nCols || row > nRows || col <= 0 || row <= 0) {
@@ -180,9 +182,19 @@ class Matrix
 
     Matrix() = default;
 
+    static This identity()
+    {
+        // TODO : non-square
+        This matrix;
+        for (usize i = 1; i < nRows; i++) {
+            matrix(i, i) = 1;
+        }
+        return matrix;
+    }
+
     /**
      * Get element from matrix
-     * @param row 1..nRows, inclusive both
+     * @param row 1..nDims, inclusive both
      * @param col 1..nCols, inclusive both
      * @return element at (row, col)
      */
@@ -200,6 +212,33 @@ class Matrix
     Shape shape() const
     {
         return Shape();
+    }
+
+    /**
+     * Vector length
+     * @return
+     */
+    Type length() const
+    {
+        if (nCols != 1) {
+            throw Exception("Length is only defined for a vector");
+        }
+
+        Type squareLength = 0;
+        for (usize i = 1; i <= nRows; i++) {
+            squareLength += self(i) * self(i);
+        }
+
+        return std::sqrt(self);
+    }
+
+    void forEach(Function<void(Type)> function) const
+    {
+        for (usize i = 1; i <= nRows; i++) {
+            for (usize j = 1; j <= nCols; j++) {
+                function(self(i, j));
+            }
+        }
     }
 
     template <typename NewType>
@@ -374,7 +413,7 @@ class Matrix
     This inverse() const
     {
         if (nCols != nRows) {
-            throw Exception("Only square matrices have inverse");
+            throw Exception("There is no inverse matrix for a non-square matrix");
         }
         // TODO
         return This();
@@ -387,11 +426,20 @@ class Matrix
      * @return (N-1)x(M-1) submatrix
      */
 
-    using Cofactor = Matrix<nRows - 1, nCols - 1, Type>;
+    using Minor = Matrix<
+        nRows == 1 ? 1 : nRows - 1,
+        nCols == 1 ? 1 : nCols - 1,
+    Type>;
 
-    Cofactor cofactor(usize row, usize col) const
+    Minor minor(usize row, usize col) const
     {
-        Cofactor result;
+        if (cols == rows && cols == 1) {
+            return Matrix<1, 1, Type>::identity();
+        }
+
+        // TODO: non-square
+
+        Minor result;
         for (usize i = 1; i <= result.rows; i++) {
             for (usize j = 1; j <= result.cols; j++) {
                 // skip `col` and `row`
@@ -399,6 +447,20 @@ class Matrix
             }
         }
         return result;
+    }
+
+    /**
+     * (i, j) minor scaled by (-1)^{i+j}
+     * @param row i
+     * @param col j
+     * @return (N-1)x(M-1) cofactor
+     */
+
+    using Cofactor = Minor;
+
+    Cofactor cofactor(usize row, usize col) const
+    {
+        return ((row + col) % 2 == 0 ? 1 : -1) * minor();
     }
 
     template <usize rowBegin, usize rowEnd, usize colBegin, usize colEnd>
@@ -409,7 +471,23 @@ class Matrix
 
     Type determinant() const
     {
-        // TODO
+        if (cols != rows) {
+            throw Exception("Determinant is not defined for a non-square matrix");
+        }
+
+        if (rows == 2) { // ac - bd
+            return self(1, 1) * self(2, 2) - self(1, 2) * self(2, 1);
+        } else if (rows == 1) {
+            return self(1, 1);
+        }
+
+        Type result = 0;
+        for (usize i = 1; i <= rows; i++) {
+            for (usize j = 1; j <= cols; j++) {
+                result += self(i, j) * cofactor(rows).determinant();
+            }
+        }
+        return result;
     }
 
     usize rank() const
@@ -418,5 +496,10 @@ class Matrix
     }
 };
 
-template <usize nRows, typename Type = double>
-using Vector = Matrix<nRows, 1, Type>;
+template <usize nRows, usize nCols, typename Type, typename Scalar>
+Matrix<nRows, nCols, Type> operator * (Scalar scalar, const Matrix<nRows, nCols, Type> & matrix)
+{
+    return (matrix.template map<Type>) (
+        [&scalar] (Type value) { return (Type) (scalar * value); }
+    );
+}
