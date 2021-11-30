@@ -2,7 +2,7 @@
  - [ ] toLatexString
  - [ ] submatrix
  - [ ] inverse matrix
- - [ ] determinant
+ - [x] determinant
  - [ ] rank
  - [ ] linear equations
  - [ ] gauss elimination

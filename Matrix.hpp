@@ -21,6 +21,9 @@ using String = std::string;
 template <typename Type, usize size>
 using Array = std::array<Type, size>;
 
+template <typename Type>
+using InitList = std::initializer_list<Type>;
+
 template <typename Signature>
 using Function = std::function<Signature>;
 
@@ -190,6 +193,13 @@ class Matrix
     using ColVector = Matrix<nCols, 1, Type>;
 
     Matrix() = default;
+
+    Matrix(InitList<Type> values)
+    {
+        for (auto iter = values.begin(); iter != values.end(); iter++) {
+            self[iter - values.begin()] = *iter;
+        }
+    }
 
     explicit Matrix(const Array<Type, nRows * nCols> & data)
     {
@@ -480,7 +490,7 @@ class Matrix
     Minor minor(usize row, usize col) const
     {
         if (cols == rows && cols == 1) {
-            return Matrix<1, 1, Type>::identity();
+            return Minor::identity();
         }
 
         // TODO: non-square
@@ -496,17 +506,15 @@ class Matrix
     }
 
     /**
-     * (i, j) minor scaled by (-1)^{i+j}
+     * determinant of (i, j) minor multiplied by (-1)^{i+j}
      * @param row i
      * @param col j
-     * @return (N-1)x(M-1) cofactor
+     * @return cofactor of
      */
 
-    using Cofactor = Minor;
-
-    Cofactor cofactor(usize row, usize col) const
+    Type cofactor(usize row, usize col) const
     {
-        return ((row + col) % 2 == 0 ? 1 : -1) * minor();
+        return ((row + col) % 2 == 0 ? 1 : -1) * minor(row, col).determinant();
     }
 
     /**
@@ -576,7 +584,8 @@ class Matrix
         }
 
         if (rows == 2) { // ac - bd
-            return self(1, 1) * self(2, 2) - self(1, 2) * self(2, 1);
+            Type result = self(1, 1) * self(2, 2) - self(1, 2) * self(2, 1);
+            return result;
         } else if (rows == 1) {
             return self(1, 1);
         }
@@ -584,7 +593,7 @@ class Matrix
         Type result = 0;
         for (usize i = 1; i <= rows; i++) {
             for (usize j = 1; j <= cols; j++) {
-                result += self(i, j) * cofactor(rows).determinant();
+                result += self(i, j) * cofactor(i, j);
             }
         }
         return result;
