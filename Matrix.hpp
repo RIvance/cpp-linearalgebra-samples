@@ -27,10 +27,7 @@ using InitList = std::initializer_list<Type>;
 template <typename Signature>
 using Function = std::function<Signature>;
 
-auto str(const char* s)
-{
-    return String(s);
-}
+String str(const char* s) { return s; }
 
 template <typename Type>
 String str(const Type & value)
@@ -121,9 +118,11 @@ class MatrixData
 {
   private:
 
-    Array<Type, nRows * nCols> data;
+    Array<Type, nRows * nCols> data = Array<Type, nRows * nCols>();
 
   public:
+
+    MatrixData() = default;
 
     Type & operator [] (usize index)
     {
@@ -158,12 +157,12 @@ class MatrixData
     }
 };
 
-template <usize nRows, usize nCols, typename Type = double>
+template <usize nRows, usize nCols = nRows, typename Type = double>
 class Matrix
 {
   private:
 
-    MatrixData<nRows, nCols, Type> self;
+    MatrixData<nRows, nCols, Type> self = MatrixData<nRows, nCols, Type>();
 
     template <usize rhsCols>
     using RightMulMatrix = Matrix<nCols, rhsCols, Type>;
@@ -185,9 +184,12 @@ class Matrix
     const usize rows = nRows;
     const usize cols = nCols;
 
+    static const bool isSquare = (nCols == nRows);
+
     template <typename NewType>
     using SameShape = Matrix<nRows, nCols, NewType>;
     using This = SameShape<Type>;
+    using Empty = Matrix<0, 0, Type>;
 
     using RowVector = Matrix<nRows, 1, Type>;
     using ColVector = Matrix<nCols, 1, Type>;
@@ -208,10 +210,24 @@ class Matrix
 
     static This identity()
     {
-        // TODO : non-square
+        if (!isSquare) {
+            throw Exception("Identity matrix must be a square matrix");
+        }
+
         This matrix;
         for (usize i = 1; i < nRows; i++) {
             matrix(i, i) = 1;
+        }
+        return matrix;
+    }
+
+    static This generate(Function<Type(usize, usize)> function)
+    {
+        This matrix;
+        for (usize i = 1; i <= matrix.rows; i++) {
+            for (usize j = 1; j <= matrix.cols; j++) {
+                matrix(i, j) = function(i, j);
+            }
         }
         return matrix;
     }
@@ -390,8 +406,13 @@ class Matrix
         return row(index);
     }
 
-    Matrix<nRows - 1, nCols, Type> dropRow(usize index)
+    Matrix<nRows - 1, nRows == 1 ? 0 : nCols, Type>
+    dropRow(usize index)
     {
+        if (rows == 1) {
+            return Empty();
+        }
+
         Matrix<nRows - 1, nCols, Type> result;
         for (usize i = 1; i <= result.rows; i++) {
             for (usize j = 1; j <= result.cols; j++) {
@@ -401,8 +422,13 @@ class Matrix
         return result;
     }
 
-    Matrix<nRows, nCols - 1, Type> dropCol(usize index)
+    Matrix<nCols == 1 ? 0 : nRows, nCols - 1, Type>
+    dropCol(usize index)
     {
+        if (cols == 1) {
+            return Empty();
+        }
+
         Matrix<nRows, nCols - 1, Type> result;
         for (usize i = 1; i <= result.rows; i++) {
             for (usize j = 1; j <= result.cols; j++) {
@@ -461,9 +487,16 @@ class Matrix
         return transpose();
     }
 
+    This adjugate() const
+    {
+        return This::generate([this] (usize row, usize col) {
+            return this->cofactor(row, col);
+        });
+    }
+
     bool isInvertible() const
     {
-        // TODO
+        return isSquare && this->determinant() != 0;
     }
 
     This inverse() const
@@ -471,8 +504,13 @@ class Matrix
         if (nCols != nRows) {
             throw Exception("There is no inverse matrix for a non-square matrix");
         }
-        // TODO
-        return This();
+
+        Type det = this->determinant();
+        if (det == 0) {
+            throw Exception("Determinant equals to zero, no inverse matrix");
+        }
+
+        return (1 / det) * this->adjugate();
     }
 
     /**
@@ -489,11 +527,9 @@ class Matrix
 
     Minor minor(usize row, usize col) const
     {
-        if (cols == rows && cols == 1) {
+        if (cols == 1 && rows == 1) {
             return Minor::identity();
         }
-
-        // TODO: non-square
 
         Minor result;
         for (usize i = 1; i <= result.rows; i++) {
@@ -557,10 +593,8 @@ class Matrix
                 result(transferRow, col) /= factor1;
             }
 
-            for (usize i = 1; i < rows; i++) {
-                if (i == transferRow) {
-                    continue;
-                }
+            for (usize i = 1; i <= rows; i++) {
+                if (i == transferRow) continue;
                 double factor2 = result(i, firstNonZeroCol);
                 for (usize j = firstNonZeroCol; j <= cols; j++) {
                     result(i, j) = result(i, j) - result(transferRow, j) * factor2;
@@ -584,8 +618,7 @@ class Matrix
         }
 
         if (rows == 2) { // ac - bd
-            Type result = self(1, 1) * self(2, 2) - self(1, 2) * self(2, 1);
-            return result;
+            return self(1, 1) * self(2, 2) - self(1, 2) * self(2, 1);
         } else if (rows == 1) {
             return self(1, 1);
         }
@@ -601,7 +634,16 @@ class Matrix
 
     usize rank() const
     {
-        // TODO
+        // for square matrices
+        usize result = rows;
+        for (usize i = 1; i <= rows; i++) {
+            bool isAllElementZero = true;
+            for (usize j = 1; j <= cols; j++) {
+                if (self(i, j) != 0) isAllElementZero = false;
+            }
+            if (isAllElementZero) result -= 1;
+        }
+        return result;
     }
 };
 
