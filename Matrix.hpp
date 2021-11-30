@@ -147,6 +147,12 @@ class MatrixData
         }
         return data[index];
     }
+
+    MatrixData & operator = (const Array<Type, nRows * nCols> & newData)
+    {
+        this->data = newData;
+        return *this;
+    }
 };
 
 template <usize nRows, usize nCols, typename Type = double>
@@ -161,6 +167,9 @@ class Matrix
 
     template <usize rhsCols>
     using RightMulResult = Matrix<nRows, rhsCols, Type>;
+
+    explicit Matrix(const MatrixData<nRows, nCols, Type> & data)
+      : self(data) { /* return */ }
 
   public:
 
@@ -181,6 +190,11 @@ class Matrix
     using ColVector = Matrix<nCols, 1, Type>;
 
     Matrix() = default;
+
+    explicit Matrix(const Array<Type, nRows * nCols> & data)
+    {
+        this->self = data;
+    }
 
     static This identity()
     {
@@ -271,12 +285,16 @@ class Matrix
         return max(comparator);
     }
 
-    String toString(Function<String(Type)> formatFunc = str<Type>) const
-    {
+    String toString(
+      #ifdef __clang__
+        Function<String(Type)> formatFunc
+      #else
+        Function<String(Type)> formatFunc = str<Type>
+      #endif
+    ) const {
         if (rows == 0 || cols == 0) {
             return "";
         }
-
         String result;
 
         SameShape<String> stringMatrix = this->map<String>(
@@ -327,6 +345,34 @@ class Matrix
             vector(i) = self(i, index);
         }
         return vector;
+    }
+
+    void setRow(usize row, const RowVector & rowVector)
+    {
+        for (usize i = 1; i <= cols; i++) {
+            self(row, i) = rowVector(i);
+        }
+    }
+
+    void setCol(usize col, const ColVector & colVector)
+    {
+        for (usize i = 1; i <= rows; i++) {
+            self(i, col) = colVector(i);
+        }
+    }
+
+    void swapRow(usize row1, usize row2)
+    {
+        for (usize i = 1; i <= cols; i++) {
+            std::swap(self(row1, i), self(row2, i));
+        }
+    }
+
+    void swapCol(usize col1, usize col2)
+    {
+        for (usize i = 1; i <= rows; i++) {
+            std::swap(self(i, col1), self(i, col2));
+        }
     }
 
     inline RowVector operator [] (usize index) const
@@ -461,6 +507,60 @@ class Matrix
     Cofactor cofactor(usize row, usize col) const
     {
         return ((row + col) % 2 == 0 ? 1 : -1) * minor();
+    }
+
+    /**
+     * simplify to a triangular matrix by gauss elimination
+     * @return triangular matrix
+     */
+
+    This triangular() const
+    {
+        This result(self);
+        /**
+         * @var transferRow: which row to eliminate to 1
+         */
+        for (usize transferRow = 1; transferRow <= rows; transferRow++) {
+
+            // find the longest non-zero row
+            usize firstNonZeroCol = 1;
+            for (NULL; firstNonZeroCol <= cols; firstNonZeroCol++) {
+                usize row = transferRow;
+                bool foundNonZeroElement = false;
+                for (NULL; row <= rows; row++) {
+                    if (result(row, firstNonZeroCol) != 0) {
+                        foundNonZeroElement = true;
+                        break;
+                    }
+                }
+                if (foundNonZeroElement) {
+                    result.swapRow(transferRow, row);
+                    break;
+                }
+            }
+
+            // zero matrix or the following rows are all zeros
+            if (firstNonZeroCol > cols) {
+                return result;
+            }
+
+            double factor1 = result(transferRow, firstNonZeroCol);
+            for (usize col = firstNonZeroCol; col <= cols; col++) {
+                result(transferRow, col) /= factor1;
+            }
+
+            for (usize i = 1; i < rows; i++) {
+                if (i == transferRow) {
+                    continue;
+                }
+                double factor2 = result(i, firstNonZeroCol);
+                for (usize j = firstNonZeroCol; j <= cols; j++) {
+                    result(i, j) = result(i, j) - result(transferRow, j) * factor2;
+                }
+            }
+        }
+
+        return result;
     }
 
     template <usize rowBegin, usize rowEnd, usize colBegin, usize colEnd>
