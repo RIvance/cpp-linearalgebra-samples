@@ -27,7 +27,8 @@ using InitList = std::initializer_list<Type>;
 template <typename Signature>
 using Function = std::function<Signature>;
 
-String str(const char* s) { return s; }
+String str(const char* s)    { return s; }
+String str(const String & s) { return s; }
 
 template <typename Type>
 String str(const Type & value)
@@ -54,6 +55,7 @@ class Exception : std::exception
 {
   private:
 
+    [[nodiscard]]
     const char *what() const noexcept override
       { return message.data(); }
 
@@ -344,11 +346,6 @@ class Matrix
         return result;
     }
 
-    String toLatexString()
-    {
-        // TODO
-    }
-
     RowVector row(usize index) const
     {
         if (index > rows) {
@@ -494,6 +491,7 @@ class Matrix
         });
     }
 
+    [[nodiscard]]
     bool isInvertible() const
     {
         return isSquare && this->determinant() != 0;
@@ -608,7 +606,13 @@ class Matrix
     template <usize rowBegin, usize rowEnd, usize colBegin, usize colEnd>
     Matrix<rowEnd - rowBegin + 1, colEnd - colBegin + 1, Type> submatrix() const
     {
-        // TODO
+        Matrix<rowEnd - rowBegin + 1, colEnd - colBegin + 1, Type> result;
+        for (usize i = rowBegin; i <= rowEnd; i++) {
+            for (usize j = colBegin; j <= colEnd; j++) {
+                result(i - rowBegin + 1, j - colBegin + 1) = self(i, j);
+            }
+        }
+        return result;
     }
 
     Type determinant() const
@@ -632,9 +636,9 @@ class Matrix
         return result;
     }
 
+    [[nodiscard]]
     usize rank() const
     {
-        // for square matrices
         usize result = rows;
         for (usize i = 1; i <= rows; i++) {
             bool isAllElementZero = true;
