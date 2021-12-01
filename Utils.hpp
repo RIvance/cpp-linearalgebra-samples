@@ -1,3 +1,11 @@
+/**
+ *
+ * This file is for educational purposes only,
+ * the matrix operations are not optimized in any way,
+ * please do not use it in a real production environment.
+ *
+ */
+
 #pragma once
 
 #include "Matrix.hpp"
@@ -80,12 +88,18 @@ class Fraction
     }
 };
 
+template <usize nRows, usize nCols, typename ValueType>
+std::ostream & operator << (std::ostream & ostream, const Matrix<nRows, nCols, ValueType> & matrix)
+{
+    return ostream << matrix.toString(Fraction::doubleToStringFrac);
+}
+
 namespace MatrixUtils
 {
     template <usize nRows, usize nCols, typename ValueType>
     void printValueMatrix(const Matrix<nRows, nCols, ValueType> & matrix)
     {
-        std::cout << matrix.toString(Fraction::doubleToStringFrac);
+        std::cout << matrix << std::endl;
     }
 
     template <usize nRows, usize nCols, typename Type>

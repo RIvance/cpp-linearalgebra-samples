@@ -340,7 +340,7 @@ class Matrix
                 result += str(" ") * (maxLength - elementString.length() + 1) + elementString;
             }
             result += " ";
-            result += (rows == 1 || (i != 1 && i != rows) ? "|\n" : i == 1 ? "\\\n" : "/\n");
+            result += (rows == 1 || (i != 1 && i != rows) ? "|\n" : i == 1 ? "\\\n" : "/");
         }
 
         return result;
