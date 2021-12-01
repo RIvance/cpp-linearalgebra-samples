@@ -93,7 +93,7 @@ namespace MatrixUtils
         const Matrix<nRows, nCols, Type> & matrix,
         Function<String(Type)> formatFunc = Fraction::doubleToLatexFrac
     ) {
-        String result = str("\\left[\\begin{array}{", str("c") * matrix.rows, "}");
+        String result = str("\\left[\\begin{array}{", str("c") * matrix.cols, "}");
 
         for (usize i = 1; i <= nRows; i++) {
             for (usize j = 1; j <= nCols; j++) {

@@ -69,7 +69,7 @@ class Exception : std::exception
       { /* return */ }
 
     explicit Exception(String message) : message(std::move(message))
-      { /* return */ }
+      { perror(what()); }
 };
 
 class MatrixIndexException : Exception
@@ -193,8 +193,8 @@ class Matrix
     using This = SameShape<Type>;
     using Empty = Matrix<0, 0, Type>;
 
-    using RowVector = Matrix<nRows, 1, Type>;
-    using ColVector = Matrix<nCols, 1, Type>;
+    using RowVector = Matrix<nCols, 1, Type>;
+    using ColVector = Matrix<nRows, 1, Type>;
 
     Matrix() = default;
 
@@ -352,7 +352,7 @@ class Matrix
             throw MatrixIndexException::rowIndexOutOfBound(rows, cols, index);
         }
         RowVector vector;
-        for (usize i = 0; i < cols; i++) {
+        for (usize i = 1; i <= cols; i++) {
             vector(i) = self(index, i);
         }
         return vector;
@@ -364,7 +364,7 @@ class Matrix
             throw MatrixIndexException::colIndexOutOfBound(rows, cols, index);
         }
         ColVector vector;
-        for (usize i = 0; i < rows; i++) {
+        for (usize i = 1; i <= rows; i++) {
             vector(i) = self(i, index);
         }
         return vector;
@@ -404,7 +404,7 @@ class Matrix
     }
 
     Matrix<nRows - 1, nRows == 1 ? 0 : nCols, Type>
-    dropRow(usize index)
+        dropRow(usize index) const
     {
         Matrix<nRows - 1, nRows == 1 ? 0 : nCols, Type> result;
         for (usize i = 1; i <= result.rows; i++) {
@@ -416,7 +416,7 @@ class Matrix
     }
 
     Matrix<nCols == 1 ? 0 : nRows, nCols - 1, Type>
-    dropCol(usize index)
+        dropCol(usize index) const
     {
         Matrix<nCols == 1 ? 0 : nRows, nCols - 1, Type> result;
         for (usize i = 1; i <= result.rows; i++) {
@@ -425,6 +425,33 @@ class Matrix
             }
         }
         return result;
+    }
+
+    Matrix<nRows + 1, nCols, Type>
+        insertRow(usize index, const RowVector & rowVector) const
+    {
+        Matrix<nRows + 1, nCols, Type> result;
+        for (usize i = 1; i <= result.rows; i++) {
+            result.setRow(i, i < index ? row(i) : i > index ? row(i - 1) : rowVector);
+        }
+        return result;
+    }
+
+    Matrix<nRows, nCols + 1, Type>
+        insertCol(usize index, const ColVector & colVector) const
+    {
+        Matrix<nRows, nCols + 1, Type> result;
+        for (usize i = 1; i <= result.cols; i++) {
+            result.setCol(i, i < index ? col(i) : i > index ? col(i - 1) : colVector);
+        }
+        return result;
+    }
+
+    This operator + (const This & rhs) const
+    {
+        return This::generate([&rhs, this] (usize row, usize col) {
+            return this->self(row, col) + rhs(row, col);
+        });
     }
 
     /**
