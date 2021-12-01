@@ -4,6 +4,7 @@
 #include "Vectors.hpp"
 
 #include <valarray>
+#include <iostream>
 
 ulong gcd(ulong a, ulong b)
 {
@@ -21,7 +22,11 @@ class Fraction
     [[nodiscard]]
     String toString() const
     {
-        return str(isNegative ? "-" : "", numerator, "/", denominator);
+        return (
+            numerator == 0 ? "0" :
+            denominator == 1 ? str(isNegative ? "-" : "", numerator) :
+            str(isNegative ? "-" : "", numerator, "/", denominator)
+        );
     }
 
     [[nodiscard]]
@@ -29,7 +34,7 @@ class Fraction
     {
         return (
             numerator == 0 ? "0" :
-            denominator == 1 ? str(numerator) :
+            denominator == 1 ? str(isNegative ? "-" : "", numerator) :
             str(isNegative ? "-\\frac{" : "\\frac{", numerator, "}{", denominator, "}")
         );
     }
@@ -68,10 +73,21 @@ class Fraction
     {
         return Fraction::from(value).toLatex();
     }
+
+    static String doubleToStringFrac(double value)
+    {
+        return Fraction::from(value).toString();
+    }
 };
 
 namespace MatrixUtils
 {
+    template <usize nRows, usize nCols, typename ValueType>
+    void printValueMatrix(const Matrix<nRows, nCols, ValueType> & matrix)
+    {
+        std::cout << matrix.toString(Fraction::doubleToStringFrac);
+    }
+
     template <usize nRows, usize nCols, typename Type>
     String matrixToLatex(
         const Matrix<nRows, nCols, Type> & matrix,

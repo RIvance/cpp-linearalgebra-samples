@@ -1,8 +1,9 @@
 ## TODOs
- - [ ] toLatexString
- - [ ] submatrix
+ - [x] toLatexString
+ - [x] submatrix
  - [x] inverse matrix
  - [x] determinant
  - [x] rank
  - [ ] linear equations
  - [ ] gauss elimination
+ - [ ] eigen value

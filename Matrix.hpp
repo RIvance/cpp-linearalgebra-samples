@@ -406,11 +406,7 @@ class Matrix
     Matrix<nRows - 1, nRows == 1 ? 0 : nCols, Type>
     dropRow(usize index)
     {
-        if (rows == 1) {
-            return Empty();
-        }
-
-        Matrix<nRows - 1, nCols, Type> result;
+        Matrix<nRows - 1, nRows == 1 ? 0 : nCols, Type> result;
         for (usize i = 1; i <= result.rows; i++) {
             for (usize j = 1; j <= result.cols; j++) {
                 result(i, j) = self(i < index ? i : i + 1, j);
@@ -422,11 +418,7 @@ class Matrix
     Matrix<nCols == 1 ? 0 : nRows, nCols - 1, Type>
     dropCol(usize index)
     {
-        if (cols == 1) {
-            return Empty();
-        }
-
-        Matrix<nRows, nCols - 1, Type> result;
+        Matrix<nCols == 1 ? 0 : nRows, nCols - 1, Type> result;
         for (usize i = 1; i <= result.rows; i++) {
             for (usize j = 1; j <= result.cols; j++) {
                 result(i, j) = self(i, j < index ? j : j + 1);
