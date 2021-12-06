@@ -647,11 +647,10 @@ class Matrix
         }
 
         Type result = 0;
-        for (usize i = 1; i <= rows; i++) {
-            for (usize j = 1; j <= cols; j++) {
-                result += self(i, j) * cofactor(i, j);
-            }
+        for (usize j = 1; j <= cols; j++) {
+            result += self(1, j) * cofactor(1, j);
         }
+
         return result;
     }
 
